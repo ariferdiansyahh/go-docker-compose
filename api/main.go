@@ -53,33 +53,49 @@ func addMessage(w http.ResponseWriter, r *http.Request) {
 
 // displayMessages handles retrieving and displaying all messages from the database
 func displayMessages(w http.ResponseWriter, r *http.Request) {
- rows, err := db.Query("SELECT id, content FROM messages")
- if err != nil {
-  http.Error(w, "Failed to retrieve messages from the database", http.StatusInternalServerError)
-  log.Printf("Database error: %v", err)
-  return
- }
- defer rows.Close()
+    // Check if the "messages" table exists
+    _, err := db.Exec(`
+        CREATE TABLE IF NOT EXISTS messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            content TEXT NOT NULL
+        )
+    `)
+    if err != nil {
+        http.Error(w, "Failed to create or check the table", http.StatusInternalServerError)
+        log.Printf("Table creation/check error: %v", err)
+        return
+    }
 
- var messages []map[string]interface{}
- for rows.Next() {
-  var id int
-  var content string
-  if err := rows.Scan(&id, &content); err != nil {
-   http.Error(w, "Error scanning database rows", http.StatusInternalServerError)
-   log.Printf("Scan error: %v", err)
-   return
-  }
-  messages = append(messages, map[string]interface{}{"id": id, "content": content})
- }
+    // Query messages from the table
+    rows, err := db.Query("SELECT id, content FROM messages")
+    if err != nil {
+        http.Error(w, "Failed to retrieve messages from the database", http.StatusInternalServerError)
+        log.Printf("Database error: %v", err)
+        return
+    }
+    defer rows.Close()
 
- if err := rows.Err(); err != nil {
-  http.Error(w, "Error iterating over rows", http.StatusInternalServerError)
-  log.Printf("Row iteration error: %v", err)
-  return
- }
+    // Prepare the response
+    var messages []map[string]interface{}
+    for rows.Next() {
+        var id int
+        var content string
+        if err := rows.Scan(&id, &content); err != nil {
+            http.Error(w, "Error scanning database rows", http.StatusInternalServerError)
+            log.Printf("Scan error: %v", err)
+            return
+        }
+        messages = append(messages, map[string]interface{}{"id": id, "content": content})
+    }
 
- // Return messages as JSON response
- w.Header().Set("Content-Type", "application/json")
- json.NewEncoder(w).Encode(messages)
+    // Check for any errors during iteration
+    if err := rows.Err(); err != nil {
+        http.Error(w, "Error iterating over rows", http.StatusInternalServerError)
+        log.Printf("Row iteration error: %v", err)
+        return
+    }
+
+    // Return messages as a JSON response
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(messages)
 }
