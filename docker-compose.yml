@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./api
+    container_name: go-api-container
+    ports:
+      - "8100:8080"    # Map host port 8100 to container port 8080
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  db:
+    image: mysql:8
+    container_name: go-db-container
+    ports:
+      - "3306:3306" 
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: testdb
+    volumes:
+      - mysql-data:/var/lib/mysql   # Use a named volume for persistent data storage
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  mysql-data:   # Declare a named volume to persist MySQL data
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
