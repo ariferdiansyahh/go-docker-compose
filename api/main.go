@@ -26,9 +26,9 @@ func main() {
  http.HandleFunc("/add-message", addMessage)
  http.HandleFunc("/view-messages", displayMessages)
 
- // Start the server on port 8080
- log.Println("Starting server on port 8080...")
- log.Fatal(http.ListenAndServe(":8080", nil))
+ // Start the server on port 8121
+ log.Println("Starting server on port 8121...")
+ log.Fatal(http.ListenAndServe(":8121", nil))
 }
 
 // addMessage handles adding a new message to the database
